@@ -16,7 +16,7 @@ struct job {
 int CommandLoop();
 char** getAndSplitUserInput(char** userInput);
 int NumWords(char* str);
-enum BuiltInCommand CheckCommand(char** args);
+enum BuiltInCommand CheckCommand(char **args, int numWords);
 int ExecuteCommand(char ***args, char **userInput, int numWords);
 void Print(char** str, int n);
 void FreeFunction(char*** str, int n);
@@ -55,7 +55,7 @@ while(1){
 		userSplitInput = getAndSplitUserInput(&userInput);
 		int numWords = NumWords(userInput);
 		commandType = CheckIfBackground(&userSplitInput, numWords);
-		commandKind = CheckCommand(userSplitInput);
+		commandKind = CheckCommand(userSplitInput, numWords);
 		if (commandType == BACKGROUND) {
 			numWords--;
 			ExecuteBackground(&userSplitInput, numWords, jobs_list, &jobs_list_size, &userInput);
@@ -207,12 +207,24 @@ int ExecuteBuiltInCommands(char ***args, enum BuiltInCommand command, struct job
 	int i;
 	char cdArgs[50];
 	if (command == CD) {
-		for (i = 0; i < strlen((*args)[1])+1 ; i++) {
-			cdArgs[i] = (*args)[1][i];
+
+		if ((*args)[1] == NULL) {
+			cdArgs[0] = '/';
+		} else {
+			for (i = 0; i < strlen((*args)[1])+1 ; i++) {
+				cdArgs[i] = (*args)[1][i];
+			}
 		}
+
 		FreeFunction(&(*args) , numWords);
 		free(*userInput);
 		return chdir(cdArgs);
+		//	if( 0 != chdir( "pathToNewDirectory" ) )
+//	{ // then chdir failed
+//		perror( "chdir failed" );
+//		// handle error
+//	}
+
 	} else if (command == JOBS) {
 		BackgroundJobStatus(jobs_list, jobs_list_size);
 		for (i = 0; i < (*jobs_list_size); i++) {
@@ -226,7 +238,10 @@ int ExecuteBuiltInCommands(char ***args, enum BuiltInCommand command, struct job
 
 
 
-enum BuiltInCommand CheckCommand(char** args) {
+enum BuiltInCommand CheckCommand(char **args, int numWords) {
+	if (numWords <= 0) {
+		return REG;
+	}
 	if (strcmp(args[0] , "cd") == 0) {
 		return CD;
 	} else if (strcmp(args[0] , "jobs") == 0) {
@@ -241,14 +256,15 @@ enum BuiltInCommand CheckCommand(char** args) {
 
 
 enum CommandType CheckIfBackground(char*** args , int numWords) {
-	if (strcmp((*args)[numWords - 1] , "&") == 0) {
+	if (numWords>0) {
+		if (strcmp((*args)[numWords - 1] , "&") == 0) {
 
-		free((*args)[numWords-1]);
-		(*args)[numWords-1] = NULL;
-
-		return BACKGROUND;
-	} else {
-		return FOREGOUND;
+			free((*args)[numWords-1]);
+			(*args)[numWords-1] = NULL;
+			return BACKGROUND;
+		} else {
+			return FOREGOUND;
+		}
 	}
 }
 
