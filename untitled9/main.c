@@ -209,22 +209,19 @@ int ExecuteBuiltInCommands(char ***args, enum BuiltInCommand command, struct job
 	if (command == CD) {
 
 		if ((*args)[1] == NULL) {
-			cdArgs[0] = '/';
+			FreeFunction(&(*args) , numWords);
+			free(*userInput);
+			return chdir(getenv("HOME"));
 		} else {
 			for (i = 0; i < strlen((*args)[1])+1 ; i++) {
 				cdArgs[i] = (*args)[1][i];
 			}
 		}
-
 		FreeFunction(&(*args) , numWords);
 		free(*userInput);
-		return chdir(cdArgs);
-		//	if( 0 != chdir( "pathToNewDirectory" ) )
-//	{ // then chdir failed
-//		perror( "chdir failed" );
-//		// handle error
-//	}
-
+		if(chdir(cdArgs) < 0) {
+			fprintf (stderr, "unknown command: %s\n", (*args)[0]);
+		}
 	} else if (command == JOBS) {
 		BackgroundJobStatus(jobs_list, jobs_list_size);
 		for (i = 0; i < (*jobs_list_size); i++) {
