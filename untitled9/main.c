@@ -3,14 +3,14 @@
 #include <stdio.h>
 #include <wait.h>
 #include <string.h>
-#include <signal.h>
 
+#define MAX_JOBS 70
 
-struct job {
+typedef struct job {
 	int argumentsNUm;
 	char** name;
 	int pid;
-};
+}job;
 
 
 int CommandLoop();
@@ -20,12 +20,12 @@ enum BuiltInCommand CheckCommand(char **args, int numWords);
 int ExecuteCommand(char ***usrSplitInput, char **userInput, int numWords);
 void PrintStringArry(char **str, int numWords);
 void FreeFunction(char*** str, int numWords);
-int ExecuteBuiltInCommands(char ***userSplitInput, enum BuiltInCommand command, struct job *jobsList, int *jobsListSize,
+int ExecuteBuiltInCommands(char ***userSplitInput, enum BuiltInCommand command, job *jobsList, int *jobsListSize,
 						   char **userInput, int numWords);
-void ExecuteBackground(char ***usrSplitInput, int numWords, struct job *jobsList, int *jobsListSize, char **userInput);
+void ExecuteBackground(char ***usrSplitInput, int numWords, job *jobsList, int *jobsListSize, char **userInput);
 void CopyStrinsArry(char*** dstStr, char** strToCpy , int numWords);
 enum CommandType CheckIfBackground(char*** args , int numWords);
-void BackgroundJobStatus(struct job *jobsList, int *jobsListSize);
+void BackgroundJobStatus(job *jobsList, int *jobsListSize);
 
 
 
@@ -49,10 +49,9 @@ int main() {
 int CommandLoop() {
 	char *userInput = NULL;
 	char **userSplitInput = NULL;
-	int flag = 1;
-	int jobs_list_size = 0;
+	int jobsListSize = 0;
 	int i = 0;
-	struct job jobs_list[50];
+	job jobsList[MAX_JOBS];
 	enum BuiltInCommand commandKind;
 	enum CommandType commandType;
 	printf("press exit to finish\n");
@@ -64,7 +63,7 @@ while(1){
 		commandKind = CheckCommand(userSplitInput, numWords);
 		if (commandType == BACKGROUND) {
 			numWords--;
-			ExecuteBackground(&userSplitInput, numWords, jobs_list, &jobs_list_size, &userInput);
+			ExecuteBackground(&userSplitInput, numWords, jobsList, &jobsListSize, &userInput);
 			usleep(50000);
 		} else {
 			if (commandKind == REG) {
@@ -73,12 +72,12 @@ while(1){
 				if (commandKind == EXIT) {
 					FreeFunction(&userSplitInput, numWords+1);
 					free(userInput);
-					for (i = 0; i < jobs_list_size; i++) {
-						FreeFunction(&(jobs_list[i].name), jobs_list[i].argumentsNUm);
+					for (i = 0; i < jobsListSize; i++) {
+						FreeFunction(&(jobsList[i].name), jobsList[i].argumentsNUm);
 					}
 					return 0;
 				}
-				ExecuteBuiltInCommands(&userSplitInput, commandKind, jobs_list, &jobs_list_size, &userInput, numWords);
+				ExecuteBuiltInCommands(&userSplitInput, commandKind, jobsList, &jobsListSize, &userInput, numWords);
 			}
 		}
 	}
@@ -177,7 +176,7 @@ int ExecuteCommand(char ***usrSplitInput, char **userInput, int numWords)
  *
 **/
 
-void BackgroundJobStatus(struct job *jobsList, int *jobsListSize) {
+void BackgroundJobStatus(job *jobsList, int *jobsListSize) {
 	int i;
 	int status;
 	int j;
@@ -213,7 +212,7 @@ void BackgroundJobStatus(struct job *jobsList, int *jobsListSize) {
 **/
 
 
-void ExecuteBackground(char ***usrSplitInput, int numWords, struct job *jobsList, int *jobsListSize,
+void ExecuteBackground(char ***usrSplitInput, int numWords, job *jobsList, int *jobsListSize,
 					   char **userInput) {
 	int pid;
 	pid = fork();
@@ -249,7 +248,7 @@ void ExecuteBackground(char ***usrSplitInput, int numWords, struct job *jobsList
 * @param numWords the number of words in the user input
 **/
 
-int ExecuteBuiltInCommands(char ***userSplitInput, enum BuiltInCommand command, struct job *jobsList, int *jobsListSize,
+int ExecuteBuiltInCommands(char ***userSplitInput, enum BuiltInCommand command, job *jobsList, int *jobsListSize,
 						   char **userInput, int numWords) {
 	//check if this success.
 	int i;
