@@ -17,9 +17,9 @@ int CommandLoop();
 char** getAndSplitUserInput(char** userInput);
 int NumWords(char* str);
 enum BuiltInCommand CheckCommand(char **args, int numWords);
-int ExecuteCommand(char ***args, char **userInput, int numWords);
-void Print(char** str, int n);
-void FreeFunction(char*** str, int n);
+int ExecuteCommand(char ***usrSplitInput, char **userInput, int numWords);
+void PrintStringArry(char **str, int numWords);
+void FreeFunction(char*** str, int numWords);
 int ExecuteBuiltInCommands(char ***args, enum BuiltInCommand command, struct job *jobs_list, int *jobs_list_size,
 						   char **userInput, int numWords);
 void ExecuteBackground(char ***args, int numWords, struct job *jobs_list, int *jobs_list_size, char **userInput);
@@ -36,9 +36,15 @@ enum CommandType{FOREGOUND, BACKGROUND};
 
 int main() {
 	CommandLoop();
-	return 0;
+	exit(1);
 }
 
+
+/**
+* function name: CommandLoop
+* the shell loop, return 0 when the user input is exit.
+* @return -  int.
+**/
 
 int CommandLoop() {
 	char *userInput = NULL;
@@ -70,7 +76,7 @@ while(1){
 					for (i = 0; i < jobs_list_size; i++) {
 						FreeFunction(&(jobs_list[i].name), jobs_list[i].argumentsNUm);
 					}
-					exit(1);
+					return 0;
 				}
 				ExecuteBuiltInCommands(&userSplitInput, commandKind, jobs_list, &jobs_list_size, &userInput, numWords);
 			}
@@ -79,6 +85,12 @@ while(1){
 }
 
 
+/**
+* function name: getAndSplitUserInput
+* the function reads the user input as a sentence and splits it to words
+* @param userInput - an arry to the user sentence
+* @return -  char** - the user split input.
+**/
 
 
 char** getAndSplitUserInput(char** userInput) {
@@ -122,8 +134,16 @@ char** getAndSplitUserInput(char** userInput) {
 }
 
 
+/**
+* function name: ExecuteCommand
+* the function execute a regular command.
+* @param userInput - the user full sentence
+* @param usrSplitInput - the user split input
+* @param numWords the number of words in the user input
+* @return -  int 1 - if everything ok.
+**/
 
-int ExecuteCommand(char ***args, char **userInput, int numWords)
+int ExecuteCommand(char ***usrSplitInput, char **userInput, int numWords)
 {
 	pid_t child_pid;
 	int status;
@@ -131,8 +151,8 @@ int ExecuteCommand(char ***args, char **userInput, int numWords)
 	if (child_pid == 0) {
 		printf("%ld\n" , (long)getpid());
 		// Child process
-		if (execvp((*args)[0], *args) == -1) {
-			fprintf (stderr, "unknown command: %s\n", (*args)[0]);
+		if (execvp((*usrSplitInput)[0], *usrSplitInput) == -1) {
+			fprintf (stderr, "unknown command: %s\n", (*usrSplitInput)[0]);
 			exit(1);
 		}
 		exit(EXIT_FAILURE);
@@ -142,12 +162,21 @@ int ExecuteCommand(char ***args, char **userInput, int numWords)
 	} else {
 		// Parent process
 		waitpid(child_pid, &status, WUNTRACED);
-		FreeFunction(&(*args), numWords);
+		FreeFunction(&(*usrSplitInput), numWords);
 		free(*userInput);
 	}
 	return 1;
 }
 
+
+/**
+* function name: ExecuteCommand
+* the function execute a regular command.
+* @param userInput - the user full sentence
+* @param usrSplitInput - the user split input
+* @param numWords the number of words in the user input
+* @return -  int 1 - if everything ok.
+**/
 
 void BackgroundJobStatus(struct job *jobs_list, int *jobs_list_size) {
 	int i;
@@ -174,7 +203,14 @@ void BackgroundJobStatus(struct job *jobs_list, int *jobs_list_size) {
 	}
 }
 
-
+/**
+* function name: ExecuteCommand
+* the function execute a regular command.
+* @param userInput - the user full sentence
+* @param usrSplitInput - the user split input
+* @param numWords the number of words in the user input
+* @return -  int 1 - if everything ok.
+**/
 
 void ExecuteBackground(char ***args, int numWords, struct job *jobs_list, int *jobs_list_size, char **userInput)
 { int pid;
@@ -200,6 +236,14 @@ void ExecuteBackground(char ***args, int numWords, struct job *jobs_list, int *j
 }
 
 
+/**
+* function name: ExecuteCommand
+* the function execute a regular command.
+* @param userInput - the user full sentence
+* @param usrSplitInput - the user split input
+* @param numWords the number of words in the user input
+* @return -  int 1 - if everything ok.
+**/
 
 int ExecuteBuiltInCommands(char ***args, enum BuiltInCommand command, struct job *jobs_list, int *jobs_list_size,
 						   char **userInput, int numWords) {
@@ -226,7 +270,7 @@ int ExecuteBuiltInCommands(char ***args, enum BuiltInCommand command, struct job
 		BackgroundJobStatus(jobs_list, jobs_list_size);
 		for (i = 0; i < (*jobs_list_size); i++) {
 				printf("%d\t\t" , jobs_list[i].pid);
-			Print(jobs_list[i].name , jobs_list[i].argumentsNUm);
+			PrintStringArry(jobs_list[i].name, jobs_list[i].argumentsNUm);
 		}
 		FreeFunction(&(*args) , numWords);
 		free(*userInput);
@@ -234,6 +278,14 @@ int ExecuteBuiltInCommands(char ***args, enum BuiltInCommand command, struct job
 }
 
 
+/**
+* function name: ExecuteCommand
+* the function execute a regular command.
+* @param userInput - the user full sentence
+* @param usrSplitInput - the user split input
+* @param numWords the number of words in the user input
+* @return -  int 1 - if everything ok.
+**/
 
 enum BuiltInCommand CheckCommand(char **args, int numWords) {
 	if (numWords <= 0) {
@@ -265,6 +317,14 @@ enum CommandType CheckIfBackground(char*** args , int numWords) {
 	}
 }
 
+/**
+* function name: ExecuteCommand
+* the function execute a regular command.
+* @param userInput - the user full sentence
+* @param usrSplitInput - the user split input
+* @param numWords the number of words in the user input
+* @return -  int 1 - if everything ok.
+**/
 
 void CopyStrinsArry(char*** dstStr, char** strToCpy , int numWords) {
 
@@ -281,17 +341,31 @@ void CopyStrinsArry(char*** dstStr, char** strToCpy , int numWords) {
 }
 
 
-void FreeFunction(char*** str, int n) {
+/**
+* function name: FreeFunction
+* the function frees strings arry.
+* @param str - the strings arry to free
+* @param numWords - the words number in the string arry.
+**/
+
+void FreeFunction(char*** str, int numWords) {
 	int i = 0;
-	for (i = 0; i < n; i++) {
+	for (i = 0; i < numWords; i++) {
 		free((*str)[i]);
 	}
 	free(*str);
 }
 
-void Print(char** str, int n) {
+/**
+* function name: PrintStringArry
+* the function prints string arry.
+* @param str - the strings arry to print
+* @param numWords - the words number in the string arry.
+**/
+
+void PrintStringArry(char **str, int numWords) {
 	int i = 0;
-	for (i = 0; i < n; i++) {
+	for (i = 0; i < numWords; i++) {
 		printf("%s " , str[i]);
 	}
 	printf("%c" , '\n');
@@ -299,6 +373,12 @@ void Print(char** str, int n) {
 
 }
 
+/**
+* function name: NumWords
+* count the words in a given string
+* @param str - string to count the words in.
+* @return - int wordsNumber.
+**/
 
 
 int NumWords(char* str) {
