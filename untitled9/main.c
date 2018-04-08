@@ -60,6 +60,11 @@ while(1){
 		printf("prompt>");
 		userSplitInput = getAndSplitUserInput(&userInput);
 		int numWords = NumWords(userInput);
+	if (numWords < 1) {
+		FreeFunction(&userSplitInput, numWords+1);
+		free(userInput);
+	}
+	if (numWords >= 1) {
 		commandType = CheckIfBackground(&userSplitInput, numWords);
 		commandKind = CheckCommand(userSplitInput, numWords);
 		if (commandType == BACKGROUND) {
@@ -82,6 +87,7 @@ while(1){
 			}
 		}
 	}
+}
 }
 
 
