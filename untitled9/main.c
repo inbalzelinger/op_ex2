@@ -20,12 +20,12 @@ enum BuiltInCommand CheckCommand(char **args, int numWords);
 int ExecuteCommand(char ***usrSplitInput, char **userInput, int numWords);
 void PrintStringArry(char **str, int numWords);
 void FreeFunction(char*** str, int numWords);
-int ExecuteBuiltInCommands(char ***args, enum BuiltInCommand command, struct job *jobs_list, int *jobs_list_size,
+int ExecuteBuiltInCommands(char ***userSplitInput, enum BuiltInCommand command, struct job *jobsList, int *jobsListSize,
 						   char **userInput, int numWords);
-void ExecuteBackground(char ***args, int numWords, struct job *jobs_list, int *jobs_list_size, char **userInput);
+void ExecuteBackground(char ***usrSplitInput, int numWords, struct job *jobsList, int *jobsListSize, char **userInput);
 void CopyStrinsArry(char*** dstStr, char** strToCpy , int numWords);
 enum CommandType CheckIfBackground(char*** args , int numWords);
-void BackgroundJobStatus(struct job *jobs_list, int *jobs_list_size);
+void BackgroundJobStatus(struct job *jobsList, int *jobsListSize);
 
 
 
@@ -170,50 +170,52 @@ int ExecuteCommand(char ***usrSplitInput, char **userInput, int numWords)
 
 
 /**
-* function name: ExecuteCommand
-* the function execute a regular command.
-* @param userInput - the user full sentence
-* @param usrSplitInput - the user split input
-* @param numWords the number of words in the user input
-* @return -  int 1 - if everything ok.
+* function name: BackgroundJobStatus
+* the function checks the status of the background proccess and update the jobsList.
+* @param jobsList - the arry of the background proccess.
+* @param jobsListSize - the sise of the jobslist.
+ *
 **/
 
-void BackgroundJobStatus(struct job *jobs_list, int *jobs_list_size) {
+void BackgroundJobStatus(struct job *jobsList, int *jobsListSize) {
 	int i;
 	int status;
 	int j;
 	int k = 0;
-	for (i = 0; i < *(jobs_list_size); i++) {
-		pid_t return_pid = waitpid((jobs_list)[i].pid , &status , WNOHANG);
+	for (i = 0; i < *(jobsListSize); i++) {
+		pid_t return_pid = waitpid((jobsList)[i].pid , &status , WNOHANG);
 		if(return_pid == -1) {
 			//error;
 		} else if (return_pid == 0) {
 			//still running
-		} else if (return_pid == (jobs_list)[i].pid) {
-			for (k = 0; k < (jobs_list)[i].argumentsNUm; k++) {
-				free(((jobs_list)[i]).name[k]);
+		} else if (return_pid == (jobsList)[i].pid) {
+			for (k = 0; k < (jobsList)[i].argumentsNUm; k++) {
+				free(((jobsList)[i]).name[k]);
 			}
-			free(((jobs_list)[i]).name);
+			free(((jobsList)[i]).name);
 			//rearange the arry
-			for(j = i; j < (*jobs_list_size) - 1; j++) {
-				(jobs_list)[j] = (jobs_list)[j + 1];
+			for(j = i; j < (*jobsListSize) - 1; j++) {
+				(jobsList)[j] = (jobsList)[j + 1];
 			}
-			(*jobs_list_size)--;
+			(*jobsListSize)--;
 		}
 	}
 }
 
 /**
-* function name: ExecuteCommand
-* the function execute a regular command.
-* @param userInput - the user full sentence
+* function name: ExecuteBackground
+* the function execute a background command.
 * @param usrSplitInput - the user split input
 * @param numWords the number of words in the user input
-* @return -  int 1 - if everything ok.
+* @param jobsList - the arry of the background commands.
+* @param jobsListSize - the sise of the jobslist.
+* @param userInput - the user full sentence
 **/
 
-void ExecuteBackground(char ***args, int numWords, struct job *jobs_list, int *jobs_list_size, char **userInput)
-{ int pid;
+
+void ExecuteBackground(char ***usrSplitInput, int numWords, struct job *jobsList, int *jobsListSize,
+					   char **userInput) {
+	int pid;
 	pid = fork();
 	if (pid == 0)
 	{
@@ -221,58 +223,60 @@ void ExecuteBackground(char ***args, int numWords, struct job *jobs_list, int *j
 		fopen("/dev/null", "r"); // open a new stdin that is always empty
 		//fprintf(stderr, "Child Job pid = %d\n", getpid());
 		//add pid to jobs list
-		execvp((*args)[0], *args);
+		execvp((*usrSplitInput)[0], *usrSplitInput);
 		// this should never be reached, unless there is an error
-		fprintf (stderr, "unknown command: %s\n", (*args)[0]);
+		fprintf (stderr, "unknown command: %s\n", (*usrSplitInput)[0]);
 		exit(1);
 	} else {
-		jobs_list[*jobs_list_size].pid = pid;
-		jobs_list[*jobs_list_size].argumentsNUm = numWords;
-		CopyStrinsArry(&jobs_list[*jobs_list_size].name , (*args) , numWords);
-		(*jobs_list_size)++;
+		jobsList[*jobsListSize].pid = pid;
+		jobsList[*jobsListSize].argumentsNUm = numWords;
+		CopyStrinsArry(&jobsList[*jobsListSize].name , (*usrSplitInput) , numWords);
+		(*jobsListSize)++;
 	}
-	FreeFunction(&(*args) , numWords);
+	FreeFunction(&(*usrSplitInput) , numWords);
 	free(*userInput);
 }
 
 
 /**
-* function name: ExecuteCommand
-* the function execute a regular command.
-* @param userInput - the user full sentence
+* function name: ExecuteBuiltInCommands
+* the function execute a built in command
 * @param usrSplitInput - the user split input
+* @param command - the command
+* @param jobsList - the arry of the background commands.
+* @param jobsListSize - the sise of the jobslist.
+* @param userInput - the user full sentence
 * @param numWords the number of words in the user input
-* @return -  int 1 - if everything ok.
 **/
 
-int ExecuteBuiltInCommands(char ***args, enum BuiltInCommand command, struct job *jobs_list, int *jobs_list_size,
+int ExecuteBuiltInCommands(char ***userSplitInput, enum BuiltInCommand command, struct job *jobsList, int *jobsListSize,
 						   char **userInput, int numWords) {
 	//check if this success.
 	int i;
 	char cdArgs[50];
 	if (command == CD) {
 
-		if ((*args)[1] == NULL) {
-			FreeFunction(&(*args) , numWords);
+		if ((*userSplitInput)[1] == NULL) {
+			FreeFunction(&(*userSplitInput) , numWords);
 			free(*userInput);
 			return chdir(getenv("HOME"));
 		} else {
-			for (i = 0; i < strlen((*args)[1])+1 ; i++) {
-				cdArgs[i] = (*args)[1][i];
+			for (i = 0; i < strlen((*userSplitInput)[1])+1 ; i++) {
+				cdArgs[i] = (*userSplitInput)[1][i];
 			}
 		}
-		FreeFunction(&(*args) , numWords);
+		FreeFunction(&(*userSplitInput) , numWords);
 		free(*userInput);
 		if(chdir(cdArgs) < 0) {
-			fprintf (stderr, "unknown command: %s\n", (*args)[0]);
+			fprintf (stderr, "unknown command: %s\n", (*userSplitInput)[0]);
 		}
 	} else if (command == JOBS) {
-		BackgroundJobStatus(jobs_list, jobs_list_size);
-		for (i = 0; i < (*jobs_list_size); i++) {
-				printf("%d\t\t" , jobs_list[i].pid);
-			PrintStringArry(jobs_list[i].name, jobs_list[i].argumentsNUm);
+		BackgroundJobStatus(jobsList, jobsListSize);
+		for (i = 0; i < (*jobsListSize); i++) {
+				printf("%d\t\t" , jobsList[i].pid);
+			PrintStringArry(jobsList[i].name, jobsList[i].argumentsNUm);
 		}
-		FreeFunction(&(*args) , numWords);
+		FreeFunction(&(*userSplitInput) , numWords);
 		free(*userInput);
 	}
 }
@@ -280,9 +284,9 @@ int ExecuteBuiltInCommands(char ***args, enum BuiltInCommand command, struct job
 
 /**
 * function name: CheckCommand
-* the function gets strings arry. in the last word in the arry is '&'
- * the function return BACKGROUND
- * else, the function returns FOREGOUND
+* the function gets strings arry and returns the kind of the command.
+ * the function return REG if the command isnt built in command
+ * else it returns the name of the relevant built in command.
 * @param args - the string arry.
 * @param numWords the number of words in args.
 **/
