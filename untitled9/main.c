@@ -279,12 +279,12 @@ int ExecuteBuiltInCommands(char ***args, enum BuiltInCommand command, struct job
 
 
 /**
-* function name: ExecuteCommand
-* the function execute a regular command.
-* @param userInput - the user full sentence
-* @param usrSplitInput - the user split input
-* @param numWords the number of words in the user input
-* @return -  int 1 - if everything ok.
+* function name: CheckCommand
+* the function gets strings arry. in the last word in the arry is '&'
+ * the function return BACKGROUND
+ * else, the function returns FOREGOUND
+* @param args - the string arry.
+* @param numWords the number of words in args.
 **/
 
 enum BuiltInCommand CheckCommand(char **args, int numWords) {
@@ -302,12 +302,18 @@ enum BuiltInCommand CheckCommand(char **args, int numWords) {
 	}
 }
 
-
+/**
+* function name: CheckIfBackground
+* the function gets strings arry. in the last word in the arry is '&'
+ * the function return BACKGROUND
+ * else, the function returns FOREGOUND
+* @param args - the string arry.
+* @param numWords the number of words in args.
+**/
 
 enum CommandType CheckIfBackground(char*** args , int numWords) {
 	if (numWords>0) {
 		if (strcmp((*args)[numWords - 1] , "&") == 0) {
-
 			free((*args)[numWords-1]);
 			(*args)[numWords-1] = NULL;
 			return BACKGROUND;
@@ -318,12 +324,11 @@ enum CommandType CheckIfBackground(char*** args , int numWords) {
 }
 
 /**
-* function name: ExecuteCommand
-* the function execute a regular command.
-* @param userInput - the user full sentence
-* @param usrSplitInput - the user split input
-* @param numWords the number of words in the user input
-* @return -  int 1 - if everything ok.
+* function name: CopyStrinsArry
+* copy char** to char**.
+* @param dstStr - the destination.
+* @param strToCpy - string to copy.
+* @param numWords the number of words to coppy
 **/
 
 void CopyStrinsArry(char*** dstStr, char** strToCpy , int numWords) {
