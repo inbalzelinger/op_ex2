@@ -27,6 +27,7 @@ void ExecuteBackground(char ***usrSplitInput, int numWords, job *jobsList, int *
 void CopyStrinsArry(char*** dstStr, char** strToCpy , int numWords);
 enum CommandType CheckIfBackground(char*** args , int numWords);
 void BackgroundJobStatus(job *jobsList, int *jobsListSize);
+void executePwd();
 
 
 
@@ -257,14 +258,28 @@ void ExecuteBackground(char ***usrSplitInput, int numWords, job *jobsList, int *
 
 int ExecuteBuiltInCommands(char ***userSplitInput, enum BuiltInCommand command, job *jobsList, int *jobsListSize,
 						   char **userInput, int numWords) {
-	//check if this success.
 	int i;
 	char cdArgs[50];
 	if (command == CD) {
+		// cd with no arguments or cd ~
 		if ((*userSplitInput)[1] == NULL || strcmp((*userSplitInput)[1] , "~" ) == 0 ) {
+			FreeFunction(&(*userSplitInput), numWords);
+			free(*userInput);
+			printf("%ld\n" , (long)getpid());
+			return chdir(getenv("HOME"));
+			// cd -
+		} else if (strcmp((*userSplitInput)[1] , "-" ) == 0) {
+			strcpy(cdArgs , "..");
 			FreeFunction(&(*userSplitInput) , numWords);
 			free(*userInput);
-			return chdir(getenv("HOME"));
+			if(chdir(cdArgs) < 0) {
+				fprintf (stderr, "unknown command:\n");
+			} else {
+				printf("%ld\n" , (long)getpid());
+			}
+			executePwd();
+			return 1;
+			//cd with arguments.
 		} else {
 			for (i = 0; i < strlen((*userSplitInput)[1])+1 ; i++) {
 				cdArgs[i] = (*userSplitInput)[1][i];
@@ -273,7 +288,9 @@ int ExecuteBuiltInCommands(char ***userSplitInput, enum BuiltInCommand command, 
 		FreeFunction(&(*userSplitInput) , numWords);
 		free(*userInput);
 		if(chdir(cdArgs) < 0) {
-			fprintf (stderr, "unknown command: %s\n", (*userSplitInput)[0]);
+			fprintf (stderr, "unknown command: \n");
+		} else {
+			printf("%ld\n" , (long)getpid());
 		}
 	} else if (command == JOBS) {
 		BackgroundJobStatus(jobsList, jobsListSize);
@@ -412,7 +429,28 @@ int NumWords(char* str) {
 	}
 	free(copy);
 	return wordsNumber;
+}
 
+
+void executePwd() {
+	pid_t pidForPwd;
+	int status;
+	char* args[] = {"pwd" , NULL};
+	pidForPwd = fork();
+	if (pidForPwd == 0) {
+		// Child process
+		if (execvp("pwd", args) == -1) {
+			fprintf (stderr, "unknown command:\n");
+			exit(1);
+		}
+		exit(EXIT_FAILURE);
+	} else if (pidForPwd < 0) {
+		perror("Fork failed");
+		exit(1);
+	} else {
+		// Parent process
+		waitpid(pidForPwd, &status, WUNTRACED);
+	}
 }
 
 
