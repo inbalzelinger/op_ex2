@@ -261,8 +261,7 @@ int ExecuteBuiltInCommands(char ***userSplitInput, enum BuiltInCommand command, 
 	int i;
 	char cdArgs[50];
 	if (command == CD) {
-
-		if ((*userSplitInput)[1] == NULL) {
+		if ((*userSplitInput)[1] == NULL || strcmp((*userSplitInput)[1] , "~" ) == 0 ) {
 			FreeFunction(&(*userSplitInput) , numWords);
 			free(*userInput);
 			return chdir(getenv("HOME"));
